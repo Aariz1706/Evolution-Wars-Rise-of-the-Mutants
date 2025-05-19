@@ -1,9 +1,12 @@
 import pygame
 import random
 import os
+import pygame.mixer
 pygame.init()
+pygame.mixer.init()
 width, height = 800, 800
 FPS = 15
+lives = 3
 speed_bullet = -10
 speed_rocket = 20
 speed_rock = 10
@@ -13,17 +16,27 @@ bullets = []
 rocks = []
 enemy_bullets = []
 bonuses = []
+message = []
 power_up = False
 power_time = 0
 bullet_cooldown = 250
 shot_time = 0
+boss_count = 0
 level = 1
 levelup_score = 100
 show_level_time = 2000
+game_start = "mode_state"
 level_text = True
+selected = None
 font_over = pygame.font.SysFont("impact", 50)
 font_menu = pygame.font.SysFont("impact" , 50)
+game_modes = ["Classic", "Challenge", "Survival", "Endless", "Target Practice", "One Life"]
 start_time_level = pygame.time.get_ticks()
+
+pygame.mixer.music.load("background_music.mp3")
+pygame.mixer.music.play(-1)
+shoot_sound = pygame.mixer.Sound("bullet_shoot.wav")
+hit_sound = pygame.mixer.Sound("hit_enemy.wav")
 
 highscore_file = "highscore.txt"
 if os.path.exists(highscore_file):
@@ -64,11 +77,56 @@ enemy_bullet_img = pygame.transform.scale(enemy_bullet_img , (25,40))
 enemy_bullet_img = tint(enemy_bullet_img , (255,0,0))
 enemy_bullet_mask = pygame.mask.from_surface(enemy_bullet_img)
 
+boss_enemy_img = pygame.image.load("boss_enemy.png").convert_alpha()
+boss_enemy_rect = boss_enemy_img.get_rect()
+boss_enemy = None
+
 background_img = pygame.image.load("background.jpg").convert()
 background_img = pygame.transform.scale(background_img, (width, height))
 
 bonus_img = pygame.image.load("bonus.png").convert_alpha()
 bonus_img = pygame.transform.scale(bonus_img, (40, 40))
+
+heart_img = pygame.image.load("heart.png").convert()
+heart_img = pygame.transform.scale(heart_img , (40,40))
+
+class BossEnemy():
+    def __init__(self):
+        self.image = pygame.transform.scale(boss_enemy_img , (150,150))
+        self.rect = self.image.get_rect()
+        self.rect_x = random.randint(60, 650)
+        self.rect_y = -150
+        self.health = 4
+        self.speed = 2
+    def move(self):
+        self.rect.y += self.speed
+    def draw(self, surface):
+        surface.blit(self.image , self.rect)
+    def is_off_screen(self):
+        return self.rect.top > height
+    def health_bar(self, surface):
+        width_bar = self.rect.width
+        height_bar = 10
+        health_ratio = self.health / 4
+        bar_rect = pygame.Rect(self.rect.x  , self.rect.y - 15 , width_bar , height_bar)
+        health_rect = pygame.Rect(self.rect.x , self.rect.y - 15 , int(width_bar*health_ratio), height_bar)
+        pygame.draw.rect(surface , (255,0,0) , bar_rect)
+        pygame.draw.rect(surface , (0,255,0) , health_rect)
+
+def level_bosses(level):
+    if level == 2:
+        return 1
+    elif level == [3,4]:
+        return 2
+    else:
+        return 2 + ((level-3)//2)
+    
+def boss_showing(level):
+    global boss_enemy ,boss_count
+    maximum_boses = level_bosses(level)
+    if boss_enemy is None and boss_count < maximum_boses and level >= 2:
+        boss_enemy = BossEnemy()
+        boss_count += 1
 
 def pause_menu():
     while True:
@@ -119,11 +177,16 @@ def show_level(level):
         pygame.time.delay(30)
 
 show_level(level)
+
+def add_message(text , duration = 8000):
+    message.append({"text" : text , "time" : pygame.time.get_ticks() , 'duration' : duration})
+
 running = True
 while running:
 
     clock.tick(FPS)
     screen.blit(background_img, (0,0))
+    boss_showing(level)
     dark_background = pygame.Surface((width,height))
     dark_background.set_alpha(80)
     dark_background.fill((0,0,0))
@@ -131,6 +194,7 @@ while running:
 
     pause = font_menu.render("Press P to Pause", True, (255, 255, 255))
     screen.blit(pause, (10, 10))
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -153,12 +217,12 @@ while running:
                 bullets.append({"rect": center_rect, "dx": 0, "dy": speed_bullet})
                 right_rect = bullet_img.get_rect(center=(rocket_rect.right - 10, rocket_rect.top))
                 bullets.append({"rect": right_rect, "dx": 3, "dy": speed_bullet})
+                shoot_sound.play()
             else:
                 center_rect = bullet_img.get_rect(center=(rocket_rect.centerx, rocket_rect.top))
                 bullets.append({"rect": center_rect, "dx": 0, "dy": speed_bullet})
+                shoot_sound.play()
         shot_time = current
-                
-
     for bullet in bullets[:]:
         bullet["rect"].x += bullet["dx"]
         bullet["rect"].y += bullet["dy"]
@@ -181,7 +245,7 @@ while running:
             bonuses.remove(bonus_rect)
             power_up = True
             power_time = pygame.time.get_ticks()
-            print("BONUSES COLLECTED! DOUBLE UP SPEED")
+            add_message("BONUSES COLLECTED! DOUBLE UP SPEED")
         screen.blit(bonus_img , bonus_rect)
 
     if current - last_enemy > enemy_delay:
@@ -193,7 +257,7 @@ while running:
             bonuses.append(bonus_rect)  
     for rock in rocks[:]:
         rock.y += speed_rock 
-        if level >= 2 and random.randint(1,100) == 1:
+        if level >= 2 and rock.centery < height//2 and random.randint(1,100) == 1:
             enemy_bullet_rect = enemy_bullet_img.get_rect(midtop = (rock.centerx ,rock.bottom))
             enemy_bullets.append(enemy_bullet_rect)
         if rock.top>height:
@@ -201,32 +265,57 @@ while running:
         elif rock.colliderect(rocket_rect):
             offset = (rocket_rect.x - rock.x , rocket_rect.y - rock.y)
             if enemy_mask.overlap(rocket_mask , offset):
-                running = False
+                rocks.remove(rock)
+                lives -= 1
+                add_message(f"Lives left: {lives}")
+                if lives <= 0:
+                    running = False
         screen.blit(enemy , rock)
     
+    if boss_enemy:
+        boss_enemy.move()
+        boss_enemy.draw(screen)
+        boss_enemy.health_bar(screen) 
+        if boss_enemy.is_off_screen():
+            boss_enemy = None
+
     for ebullet in enemy_bullets[:]:
         if ebullet.colliderect(rocket_rect):
             offset = (rocket_rect.x - ebullet.x , rocket_rect.y - ebullet.y)
             if enemy_bullet_mask.overlap(rocket_mask , offset):
-                running = False
-                enemy_bullets.remove(ebullet) 
+                enemy_bullets.remove(ebullet)
+                lives -= 1
+                print(f"Lives left: {lives}")
+                if lives <= 0:
+                    running = False
 
     for rock in rocks[:]:
         for bullet in bullets[:]:
             if bullet["rect"].colliderect(rock):
+                hit_sound.play()
                 offset = (bullet["rect"].x - rock.x , bullet["rect"].y - rock.y)
                 if enemy_mask.overlap(bullet_mask , offset):
                     rocks.remove(rock)
                     bullets.remove(bullet)
                     score += 10
                     if score >= level * levelup_score:
-                        level +=1
+                        level += 1
+                        boss_vount = 0
                         show_level(level)
                         if level >= 4:
                             speed_rock += 1
                         if enemy_delay > 400:
                             enemy_delay -= 100
                     enemy_delay = max(300 , enemy_delay-10)
+                    break
+    if boss_enemy:
+        for bullet in bullets[:]:
+            if boss_enemy.rect.colliderect(bullet["rect"]):
+                bullets.remove(bullet)      
+                boss_enemy.health -= 1
+                if boss_enemy.health <= 0:
+                    score += 20
+                    boss_enemy = None
                     break
 
     screen.blit(rocket, rocket_rect)
@@ -239,21 +328,20 @@ while running:
     if power_up:
         if pygame.time.get_ticks() -power_time > 5000:
             power_up = False
-            print("POWER-UP ENDED")
+            add_message("POWER-UP ENDED")
+    for i in range(lives):
+        screen.blit(heart_img , (10 + i*50 , 70))
+
+    for m in message[:]:
+        passed = pygame.time.get_ticks() - m["time"]
+        if passed > m["duration"]:
+            message.remove(m)
+        else:
+            text_message = font_menu.render(m["text"] , True , (255,255,0))
+            screen.blit(text_message , (width//2 - text_message.get_width() // 2 , height-100))
     pygame.display.flip()
 
 def game_over(score):
-#     window = pygame.display.set_mode((width , height))
-#     window.fill((0,0,0))
-#     text_game = font_over.render(f"GAME OVER" , True , (255,255,255))
-#     text_score = font_over.render(f"SCORE: {score}" , True , (255,255,255))
-#     text_game_rect = text_game.get_rect( center = (width//2 , height//2))
-#     text_score_rect = text_game.get_rect( center = (width//2 , height//2 -100))
-#     window.blit(text_game , text_game_rect)
-#     window.blit(text_score , text_score_rect)
-#     pygame.display.flip()
-#     pygame.time.wait(3000)
-# game_over(score)
     global high_score
     if score > high_score:
         high_score = score
