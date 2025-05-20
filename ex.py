@@ -30,7 +30,7 @@ level_text = True
 selected = None
 font_over = pygame.font.SysFont("impact", 50)
 font_menu = pygame.font.SysFont("impact" , 50)
-game_modes = ["Classic", "Challenge", "Survival", "Endless", "Target Practice", "One Life"]
+game_modes = ["Classic" , "Challenge" , "Survival" , "Target Practice" , "One Life"]
 start_time_level = pygame.time.get_ticks()
 
 pygame.mixer.music.load("background_music.mp3")
@@ -192,7 +192,7 @@ def show_level(level):
         pygame.display.flip()
         pygame.time.delay(30)
 
-show_level(level)
+
 
 def add_message(text , duration = 8000):
     message.append({"text" : text , "time" : pygame.time.get_ticks() , 'duration' : duration})
@@ -207,8 +207,6 @@ while options:
             running = False  
     elif selected == "Survival":
         speed_rock += enemy_speed_increase
-    elif selected == "Endless":
-        pass
     elif selected == "One Life":
         lives = 1
     elif selected == "Target Practice":
@@ -237,20 +235,15 @@ while options:
                     enemy_delay = 500
                     speed_rock = 5  
                     boss_count = 1000
+show_level(level)
 
 running = True
 while running:
 
     clock.tick(FPS)
-    if selected == "Challenge":
-        elapsed = pygame.time.get_ticks() - start_duration
-        remaining = max(0, 60000 - elapsed)
-        timer_text = font_menu.render(f"Time Left: {remaining // 1000}s", True, (255, 255, 255))
-        screen.blit(timer_text, (20, 20))
-        if remaining <= 0:
-            running = False
 
-    elif selected == "Survival":
+
+    if selected == "Survival":
         speed_rock += enemy_speed_increase
         speed_rock = min(speed_rock, 20)
 
@@ -262,14 +255,40 @@ while running:
         if lives <= 0:
             running = False
     screen.blit(background_img, (0,0))
+
     boss_showing(level)
+
+    hud_x = 20
+    hud_y = 20
+    line_spacing = 10
+
+    # Pause text
+    pause = font_menu.render("Press P to Pause", True, (255, 255, 255))
+    screen.blit(pause, (hud_x, hud_y))
+    hud_y += pause.get_height() + line_spacing
+
+    # Challenge Timer
+    if selected == "Challenge":
+        elapsed = pygame.time.get_ticks() - start_duration
+        remaining = max(0, 60000 - elapsed)
+        timer_text = font_menu.render(f"Time Left: {remaining // 1000}s", True, (255, 255, 255))
+        screen.blit(timer_text, (hud_x, hud_y))
+        hud_y += timer_text.get_height() + line_spacing
+    # pause = font_menu.render("Press P to Pause", True, (255, 255, 255))
+    # screen.blit(pause, (20, 20))
+    # if selected == "Challenge":
+    #     elapsed = pygame.time.get_ticks() - start_duration
+    #     remaining = max(0, 60000 - elapsed)
+    #     timer_text = font_menu.render(f"Time Left: {remaining // 1000}s", True, (255, 255, 255))
+    #     screen.blit(timer_text, (20, 20 + pause.get_height() + 10))
+        if remaining <= 0:
+            running = False
     dark_background = pygame.Surface((width,height))
     dark_background.set_alpha(80)
     dark_background.fill((0,0,0))
     screen.blit(dark_background ,(0,0))
 
-    pause = font_menu.render("Press P to Pause", True, (255, 255, 255))
-    screen.blit(pause, (10, 10))
+
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -406,7 +425,7 @@ while running:
             power_up = False
             add_message("POWER-UP ENDED")
     for i in range(lives):
-        screen.blit(heart_img , (10 + i*50 , 70))
+        screen.blit(heart_img , (hud_x + i * (heart_img.get_width() + 5) , hud_y))
 
     for m in message[:]:
         passed = pygame.time.get_ticks() - m["time"]
