@@ -2,7 +2,6 @@ import pygame
 import random
 import os
 import pygame.mixer
-import sys
 pygame.init()
 pygame.mixer.init()
 width, height = 800, 800
@@ -14,17 +13,6 @@ speed_rock = 10
 speed_enemy_bullet = 20
 enemy_speed_increase = 0.005 
 score = 0
-endless_start_time = 0
-diff_increase_interval = 10000
-last_diff_increase = 0
-enemy_delay = 1000
-endless_rockspeed = speed_rock
-endless_enemydelay = enemy_delay
-wave_timer = 0
-wave = 1
-wave_threshold = 1000
-wave_mutation = None
-
 bullets = []
 rocks = []
 enemy_bullets = []
@@ -61,6 +49,7 @@ pygame.display.set_caption("Rocket Laucher")
 
 
 clock=pygame.time.Clock()
+enemy_delay = 1000
 last_enemy = pygame.time.get_ticks()
 
 def tint(surface, color):
@@ -105,6 +94,7 @@ enemy_bullet_img = tint(enemy_bullet_img , (255,0,0))
 enemy_bullet_mask = pygame.mask.from_surface(enemy_bullet_img)
 
 boss_enemy_img = pygame.image.load("boss_enemy.png").convert_alpha()
+boss_enemy_rect = boss_enemy_img.get_rect()
 boss_enemy = None
 
 background_img = pygame.image.load("background.jpg").convert()
@@ -120,18 +110,14 @@ class BossEnemy():
     def __init__(self):
         self.image = pygame.transform.scale(boss_enemy_img , (150,150))
         self.rect = self.image.get_rect()
-        self.rect.x = random.randint(60, 650)
-        self.rect.y = -150
+        self.rect_x = random.randint(60, 650)
+        self.rect_y = -150
         self.health = 4
         self.speed = 2
     def move(self):
-        self.rect.y += 5
-    def draw(self, window):
-        window.blit(self.image , (self.rect.x , self.rect.y))
-        if self.health > 1:
-            shield = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
-            pygame.draw.circle(shield, (0, 100, 255, 100), (self.rect.width//2 , self.rect.height//2), self.rect.width//2)
-            window.blit(shield, (self.rect.x, self.rect.y))
+        self.rect.y += self.speed
+    def draw(self, surface):
+        surface.blit(self.image , self.rect)
     def is_off_screen(self):
         return self.rect.top > height
     def health_bar(self, surface):
@@ -143,52 +129,6 @@ class BossEnemy():
         pygame.draw.rect(surface , (255,0,0) , bar_rect)
         pygame.draw.rect(surface , (0,255,0) , health_rect)
 
-class Enemy():
-    def __init__(self , x , y , speed , shape_type = "rect" , health = 1):
-        self.x = x
-        self.y = y
-        self.speed = speed
-        self.shape_type = shape_type
-        self.health = health
-        self.size = 40
-        self.color = (255,0,0)
-        self.image = pygame.Surface((self.size , self.size) , pygame.SRCALPHA)
-        self.update_shape()
-    def move(self):
-        self.y += 5
-    def draw(self , window):
-        window.blit(self.image , (self.x , self.y))
-    def mutate(self, mutation_type):
-        if mutation_type:
-            self.shape_type = mutation_type
-            self.color = (255,0,0)
-            self.size = 40
-            if mutation_type == "fast":
-                self.color = (255, 165, 0)  
-                self.speed *= 1.5 
-            elif mutation_type == "circle":
-                self.color = (0, 255, 0)
-            elif mutation_type == "split":
-                self.color = (255, 0, 255)
-                self.size = 60
-            elif mutation_type == "small":
-                self.color = (0, 255, 255)
-                self.size = 20
-            elif mutation_type == "shielded":
-                self.color = (0, 0, 255)
-                self.health = 2 
-            self.update_shape()
-    def get_rect(self):
-        return pygame.Rect(self.x , self.y , self.size , self.size)
-    def update_shape(self):
-        self.image.fill((0,0,0,0))
-        if self.shape_type == "rect":
-            pygame.draw.rect(self.image , self.color , (0,0,self.size,self.size))
-        elif self.shape_type == "circle":
-            pygame.draw.circle(self.image , self.color , (self.size // 2 , self.size // 2) , self.size // 2)
-        elif self.shape_type == "triangle":
-            points = [(self.size // 2 , 0) , (0 , self.size) , (self.size , self.size)]
-            pygame.draw.polygon(self.image , self.color , points)
 def level_bosses(level):
     if level == 2:
         return 1
@@ -223,7 +163,6 @@ def pause_menu():
                     return
                 elif event.key == pygame.K_q:
                     pygame.quit()
-                    sys.exit()
 
 def show_level(level):
     overlay = pygame.Surface((width, height), pygame.SRCALPHA)
@@ -269,9 +208,7 @@ while options:
     elif selected == "Survival":
         speed_rock += enemy_speed_increase
     elif selected == "Endless":
-        endless_start_time = pygame.time.get_ticks()
-        endless_rockspeed = 7
-        endless_enemydelay = 1000
+        pass
     elif selected == "One Life":
         lives = 1
     elif selected == "Target Practice":
@@ -279,8 +216,8 @@ while options:
     menu(selected_mode_index)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+            pygame.exit()
+            exit()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 selected_mode_index = (selected_mode_index-1) % len(game_modes)
@@ -301,19 +238,6 @@ while options:
                     speed_rock = 5  
                     boss_count = 1000
 
-def update_endless_mode():
-    global wave, wave_timer, wave_mutation, endless_rockspeed
-    
-    wave_timer += 1
-    if wave_timer >= wave_threshold:
-        wave += 1
-        wave_timer = 0
-        wave_mutation = random.choice(["circle", "fast", "split", "small", "shielded"])
-        add_message(f"Wave {wave}: {wave_mutation} mutation!", 3000)
-    if wave_timer == 0: 
-        endless_rockspeed += 0.5
-        endless_enemydelay = max(300, endless_enemydelay - 50)
-
 running = True
 while running:
 
@@ -329,26 +253,7 @@ while running:
     elif selected == "Survival":
         speed_rock += enemy_speed_increase
         speed_rock = min(speed_rock, 20)
-    elif selected == "Endless":
-        update_endless_mode()
-        if len(rocks) < 3 + wave: 
-            x = random.randint(0, width - 40)
-            y = random.randint(-150, -40)
-            speed = endless_rockspeed
-            new_enemy = Enemy(x, y, speed)
-            new_enemy.mutate(wave_mutation)
-            # # Apply wave mutation
-            # if wave_mutation == "fast":
-            #     new_enemy.speed *= 1.5
-            # elif wave_mutation == "circle":
-            #     new_enemy.mutate("circle")
-            # elif wave_mutation == "split":
-            #     new_enemy.size = 60  
-            # elif wave_mutation == "small":
-            #     new_enemy.size = 20 
-            # elif wave_mutation == "shielded":
-            #     new_enemy.health = 2 
-            rocks.append(new_enemy)
+
     elif selected == "Target Practice":
         enemy_bullets.clear()
         boss_enemy = None
@@ -358,12 +263,6 @@ while running:
             running = False
     screen.blit(background_img, (0,0))
     boss_showing(level)
-    if boss_enemy:
-        boss_enemy.move()
-        boss_enemy.draw(screen)
-        boss_enemy.health_bar(screen)
-    if boss_enemy is not None and boss_enemy.is_off_screen():
-        boss_enemy = None
     dark_background = pygame.Surface((width,height))
     dark_background.set_alpha(80)
     dark_background.fill((0,0,0))
@@ -425,30 +324,29 @@ while running:
             add_message("BONUSES COLLECTED! TRIPLE FIRING")
         screen.blit(bonus_img , bonus_rect)
 
-    if current - last_enemy > (endless_enemydelay if selected == "Endless" else enemy_delay):
+    if current - last_enemy > enemy_delay:
         rock_rect = enemy.get_rect(topleft = (random.randint(0, width-100), 0))
         rocks.append(rock_rect)
         last_enemy = current
         if level >= 3 and random.randint(1,10) == 1:
             bonus_rect = bonus_img.get_rect(center = (rock_rect.centerx , rock_rect.centery))
             bonuses.append(bonus_rect)  
-    for enemy in rocks[:]:
-        
-        pygame.draw.rect(screen, (128, 128, 128), enemy)
-        if level >= 2 and enemy.centery < height//2 and random.randint(1,100) == 1:
-            enemy_bullet_rect = enemy_bullet_img.get_rect(midtop = (enemy.x + enemy.size//2, enemy.y + enemy.size))
+    for rock in rocks[:]:
+        rock.y += speed_rock 
+        if level >= 2 and rock.centery < height//2 and random.randint(1,100) == 1:
+            enemy_bullet_rect = enemy_bullet_img.get_rect(midtop = (rock.centerx ,rock.bottom))
             enemy_bullets.append(enemy_bullet_rect)
-        if enemy.y > height:
-            rocks.remove(enemy)
-        enemy_rect = pygame.Rect(enemy.x, enemy.y, enemy.image.get_width(), enemy.image.get_height())
-        if enemy_rect.colliderect(rocket_rect):
-            offset = (rocket_rect.x - enemy.x , rocket_rect.y - enemy.y)
-            if enemy_mask.overlap(rocket_mask , offset):    
-                rocks.remove(enemy)
+        if rock.top>height:
+            rocks.remove(rock)
+        elif rock.colliderect(rocket_rect):
+            offset = (rocket_rect.x - rock.x , rocket_rect.y - rock.y)
+            if enemy_mask.overlap(rocket_mask , offset):
+                rocks.remove(rock)
                 lives -= 1
                 add_message(f"Lives left: {lives}")
                 if lives <= 0:
                     running = False
+        screen.blit(enemy , rock)
     
     if boss_enemy:
         boss_enemy.move()
@@ -467,13 +365,13 @@ while running:
                 if lives <= 0:
                     running = False
 
-    for enemy in rocks[:]:
+    for rock in rocks[:]:
         for bullet in bullets[:]:
-            if bullet["rect"].colliderect(enemy.get_rect()):
+            if bullet["rect"].colliderect(rock):
                 hit_sound.play()
-                offset = (bullet["rect"].x - enemy.x , bullet["rect"].y - enemy.y)
+                offset = (bullet["rect"].x - rock.x , bullet["rect"].y - rock.y)
                 if enemy_mask.overlap(bullet_mask , offset):
-                    rocks.remove(enemy)
+                    rocks.remove(rock)
                     bullets.remove(bullet)
                     score += 10
                     if score >= level * levelup_score:
@@ -518,10 +416,10 @@ while running:
             text_message = font_menu.render(m["text"] , True , (255,255,0))
             screen.blit(text_message , (width//2 - text_message.get_width() // 2 , height-100))
 
-    if selected == "Challenge":
+    if selected == "Challenge Mode":
         elapsed = pygame.time.get_ticks() - start_time_level
         remaining = max(0 , game_duration - elapsed)
-        timer_text = font_menu.render(f"Remaining time: {remaining // 1000}s" , True , (255,255,255))
+        timer_text = font_menu.render(f"Remaining time: {remaining // 1000}" , True , (255,255,255))
         screen.blit(timer_text , (20,20))
         if remaining <= 0:
             game_over = True
