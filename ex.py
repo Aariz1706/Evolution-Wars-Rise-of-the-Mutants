@@ -38,12 +38,6 @@ pygame.mixer.music.play(-1)
 shoot_sound = pygame.mixer.Sound("bullet_shoot.wav")
 hit_sound = pygame.mixer.Sound("hit_enemy.wav")
 
-highscore_file = "highscore.txt"
-if os.path.exists(highscore_file):
-    with open(highscore_file, "r") as f:
-        high_score = int(f.read())
-else:
-    high_score = 0
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Rocket Laucher")
 
@@ -110,8 +104,8 @@ class BossEnemy():
     def __init__(self):
         self.image = pygame.transform.scale(boss_enemy_img , (150,150))
         self.rect = self.image.get_rect()
-        self.rect_x = random.randint(60, 650)
-        self.rect_y = -150
+        self.rect.x = random.randint(60, 650)
+        self.rect.y = -150
         self.health = 4
         self.speed = 2
     def move(self):
@@ -192,10 +186,32 @@ def show_level(level):
         pygame.display.flip()
         pygame.time.delay(30)
 
-
-
 def add_message(text , duration = 8000):
     message.append({"text" : text , "time" : pygame.time.get_ticks() , 'duration' : duration})
+
+def game_over(score):
+    global high_score
+    if score > high_score:
+        high_score = score
+        with open(highscore_file, "w") as f:
+            f.write(str(high_score))
+
+    window = pygame.display.set_mode((width , height))
+    window.fill((0,0,0))
+
+    text_game = font_over.render("GAME OVER", True, (255, 0, 0))
+    text_score = font_over.render(f"SCORE: {score}", True, (255, 255, 255))
+    text_high = font_over.render(f"HIGH SCORE: {high_score}", True, (255, 215, 0))
+
+    text_game_rect = text_game.get_rect(center = (width // 2, height // 2 - 60))
+    text_score_rect = text_score.get_rect(center = (width // 2, height // 2))
+    text_high_rect = text_high.get_rect(center = (width // 2, height // 2 + 60))
+
+    window.blit(text_game, text_game_rect)
+    window.blit(text_score, text_score_rect)
+    window.blit(text_high, text_high_rect)
+    pygame.display.flip()
+    pygame.time.wait(3000)
 
 selected_mode_index = 0
 options = True
@@ -214,7 +230,7 @@ while options:
     menu(selected_mode_index)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.exit()
+            pygame.quit()
             exit()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
@@ -224,6 +240,12 @@ while options:
             elif event.key == pygame.K_RETURN:
                 selected = game_modes[selected_mode_index]
                 options = False
+                highscore_file = f"highscore_{selected}.txt"
+                if os.path.exists(highscore_file):
+                    with open(highscore_file, "r") as f:
+                        high_score = int(f.read())
+                else:
+                    high_score = 0
                 if selected == "Challenge":
                     start_duration = pygame.time.get_ticks()
                 elif selected == "Survival":
@@ -274,21 +296,13 @@ while running:
         timer_text = font_menu.render(f"Time Left: {remaining // 1000}s", True, (255, 255, 255))
         screen.blit(timer_text, (hud_x, hud_y))
         hud_y += timer_text.get_height() + line_spacing
-    # pause = font_menu.render("Press P to Pause", True, (255, 255, 255))
-    # screen.blit(pause, (20, 20))
-    # if selected == "Challenge":
-    #     elapsed = pygame.time.get_ticks() - start_duration
-    #     remaining = max(0, 60000 - elapsed)
-    #     timer_text = font_menu.render(f"Time Left: {remaining // 1000}s", True, (255, 255, 255))
-    #     screen.blit(timer_text, (20, 20 + pause.get_height() + 10))
+
         if remaining <= 0:
             running = False
     dark_background = pygame.Surface((width,height))
     dark_background.set_alpha(80)
     dark_background.fill((0,0,0))
     screen.blit(dark_background ,(0,0))
-
-
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -366,7 +380,7 @@ while running:
                 if lives <= 0:
                     running = False
         screen.blit(enemy , rock)
-    
+
     if boss_enemy:
         boss_enemy.move()
         boss_enemy.draw(screen)
@@ -441,34 +455,10 @@ while running:
         timer_text = font_menu.render(f"Remaining time: {remaining // 1000}" , True , (255,255,255))
         screen.blit(timer_text , (20,20))
         if remaining <= 0:
-            game_over = True
-            game_over()
             pygame.time.delay(3000)
             running = False
     pygame.display.flip()
 
-def game_over(score):
-    global high_score
-    if score > high_score:
-        high_score = score
-        with open(highscore_file, "w") as f:
-            f.write(str(high_score))
-
-    window = pygame.display.set_mode((width , height))
-    window.fill((0,0,0))
-
-    text_game = font_over.render("GAME OVER", True, (255, 0, 0))
-    text_score = font_over.render(f"SCORE: {score}", True, (255, 255, 255))
-    text_high = font_over.render(f"HIGH SCORE: {high_score}", True, (255, 215, 0))
-
-    text_game_rect = text_game.get_rect(center = (width // 2, height // 2 - 60))
-    text_score_rect = text_score.get_rect(center = (width // 2, height // 2))
-    text_high_rect = text_high.get_rect(center = (width // 2, height // 2 + 60))
-
-    window.blit(text_game, text_game_rect)
-    window.blit(text_score, text_score_rect)
-    window.blit(text_high, text_high_rect)
-    pygame.display.flip()
-    pygame.time.wait(3000)  
+  
 game_over(score)
 pygame.quit()
