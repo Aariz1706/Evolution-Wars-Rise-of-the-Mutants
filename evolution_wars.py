@@ -33,10 +33,10 @@ font_menu = pygame.font.SysFont("impact" , 50)
 game_modes = ["Classic" , "Challenge" , "Survival" , "Target Practice" , "One Life"]
 start_time_level = pygame.time.get_ticks()
 
-pygame.mixer.music.load("background_music.mp3")
+pygame.mixer.music.load("assets/sounds/background_music.mp3")
 pygame.mixer.music.play(-1)
-shoot_sound = pygame.mixer.Sound("bullet_shoot.wav")
-hit_sound = pygame.mixer.Sound("hit_enemy.wav")
+shoot_sound = pygame.mixer.Sound("assets/sounds/bullet_shoot.wav")
+hit_sound = pygame.mixer.Sound("assets/sounds/hit_enemy.wav")
 
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Rocket Laucher")
@@ -67,37 +67,37 @@ def menu(selected_index):
     intructions = menu_font.render("Use ↑ ↓ to select mode, Enter to start" , True , (200,200,200))
     screen.blit(intructions , (width // 2 - intructions.get_width() // 2 , height - 100))
     pygame.display.flip()
-rocket_img = pygame.image.load("rocket_image.png").convert_alpha()
+rocket_img = pygame.image.load("assets/images/rocket_image.png").convert_alpha()
 rocket = pygame.transform.scale(rocket_img , (120,120))
 rocket_rect = rocket.get_rect(center = (width//2, height-70))
 rocket_mask = pygame.mask.from_surface(rocket)
 
-enemy_img = pygame.image.load("enemy_image.png")
+enemy_img = pygame.image.load("assets/images/enemy_image.png")
 enemy = pygame.transform.scale(enemy_img, (100,100))
 enemy_rect = enemy.get_rect(topleft = (100,100))
 enemy_mask = pygame.mask.from_surface(enemy)
 
-bullet_img = pygame.image.load("bullet_image.png").convert_alpha()
+bullet_img = pygame.image.load("assets/images/bullet_image.png").convert_alpha()
 bullet_img = pygame.transform.scale(bullet_img, (30,45))
 bullet_img = tint(bullet_img, (255, 255, 0))
 bullet_mask = pygame.mask.from_surface(bullet_img)
 
-enemy_bullet_img = pygame.image.load("enemy_bullet.png").convert_alpha()
+enemy_bullet_img = pygame.image.load("assets/images/enemy_bullet.png").convert_alpha()
 enemy_bullet_img = pygame.transform.scale(enemy_bullet_img , (25,40))
 enemy_bullet_img = tint(enemy_bullet_img , (255,0,0))
 enemy_bullet_mask = pygame.mask.from_surface(enemy_bullet_img)
 
-boss_enemy_img = pygame.image.load("boss_enemy.png").convert_alpha()
+boss_enemy_img = pygame.image.load("assets/images/boss_enemy.png").convert_alpha()
 boss_enemy_rect = boss_enemy_img.get_rect()
 boss_enemy = None
 
-background_img = pygame.image.load("background.jpg").convert()
+background_img = pygame.image.load("assets/images/background.jpg").convert()
 background_img = pygame.transform.scale(background_img, (width, height))
 
-bonus_img = pygame.image.load("bonus.png").convert_alpha()
+bonus_img = pygame.image.load("assets/images/bonus.png").convert_alpha()
 bonus_img = pygame.transform.scale(bonus_img, (40, 40))
 
-heart_img = pygame.image.load("heart.png").convert()
+heart_img = pygame.image.load("assets/images/heart.png").convert()
 heart_img = pygame.transform.scale(heart_img , (40,40))
 
 class BossEnemy():
