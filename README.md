@@ -1,9 +1,10 @@
 # Evolution Wars
 
-A fast-paced, level-based space shooter game built using Python and Pygame — where enemies mutate, bosses strike back, and reflexes win the war.
+********A fast-paced, level-**bas**ed space shooter game built using Python and Pygame — where enemies mutate, bosses strike back, and reflexes win the war.**
 ---
 
 **Gameplay Demo**
+---
 ![Gameplay Demo](assets/sounds/Animation.gif)
 ---
 
