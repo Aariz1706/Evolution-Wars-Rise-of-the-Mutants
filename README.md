@@ -2,7 +2,7 @@
 
 A fast-paced, level-based space shooter game built using Python and Pygame — where enemies mutate, bosses strike back, and reflexes win the war.
 
-##Demo
+#Demo
 ![Gameplay Demo](assets/sounds/Animation.gif)
 ---
 
