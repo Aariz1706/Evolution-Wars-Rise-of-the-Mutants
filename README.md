@@ -1,4 +1,4 @@
-# Evolution Wars
+# Evolution Wars: Rise of the Mutants
 
 A fast-paced, level-based space shooter game built using Python and Pygame — where enemies mutate, bosses strike back, and reflexes win the war.
 ---
