@@ -462,3 +462,4 @@ while running:
   
 game_over(score)
 pygame.quit()
+
