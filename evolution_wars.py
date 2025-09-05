@@ -39,7 +39,7 @@ shoot_sound = pygame.mixer.Sound("assets/sounds/bullet_shoot.wav")
 hit_sound = pygame.mixer.Sound("assets/sounds/hit_enemy.wav")
 
 screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("Rocket Laucher")
+pygame.display.set_caption("Evolution Wars")
 
 
 clock=pygame.time.Clock()
@@ -462,4 +462,5 @@ while running:
   
 game_over(score)
 pygame.quit()
+
 
