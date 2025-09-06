@@ -63,7 +63,7 @@ def menu(selected_index):
         else:
             color = (255,255,255)
         mode_text = menu_font.render(mode , True , color)
-        screen.blit(mode_text , (width // 2 - mode_text.get_width() // 2 , 250+i*60))
+        screen.blit(mode_text , (width // 2 - mode_text.get_width() // 2 , 250+i*50))
     intructions = menu_font.render("Use ↑ ↓ to select mode, Enter to start" , True , (200,200,200))
     screen.blit(intructions , (width // 2 - intructions.get_width() // 2 , height - 100))
     pygame.display.flip()
@@ -462,5 +462,6 @@ while running:
   
 game_over(score)
 pygame.quit()
+
 
 
